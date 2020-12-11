@@ -1,15 +1,44 @@
 # Databricks notebook source
 ## Import libraries
 from pyspark.sql import functions as fn
+import pandas as pd
 
 # COMMAND ----------
 
 ## Define an unpivot function
-def melt(df, id_vars, var_name="Variable", value_name="Value"):
+def melt(df, id_vars, var_name="variable", value_name="value"):
   """"Unpivot a DataFrame from wide to long format"""
   var_columns = [col for col in df.columns if col not in id_vars]
-  expression = ', '.join([', '.join([x, '`' + x + '`']) for x in var_columns])
+  expression = ', '.join([', '.join(['\'' + x + '\'', '`' + x + '`']) for x in var_columns])
   return df.selectExpr(id_vars, f"stack({len(var_columns)},{expression}) as ({var_name}, {value_name})")
+
+# COMMAND ----------
+
+## Create some test data
+df_in = spark.createDataFrame(
+  pd.DataFrame({
+    'A': {0: 'a', 1: 'b', 2: 'c'},
+    'B': {0: 1, 1: 3, 2: 5},
+    'C': {0: 2, 1: 4, 2: 6}
+  })
+)
+
+df_out = spark.createDataFrame(
+  pd.DataFrame({
+    'A': {0: 'a', 1: 'b', 2: 'c', 3: 'a', 4: 'b', 5: 'c',},
+    'variable': {0: 'B', 1: 'B', 2: 'B', 3: 'C', 4: 'C', 5: 'C',},
+    'value': {0: 1, 1: 3, 2: 5, 3: 2, 4: 4, 5: 6}
+    })
+)
+
+# COMMAND ----------
+
+## Test function
+
+melt(
+  df=df_in,
+  id_vars='A'
+).show()
 
 # COMMAND ----------
 
