@@ -10,7 +10,17 @@ def melt(df, id_vars, var_name="variable", value_name="value"):
   """"Unpivot a DataFrame from wide to long format"""
   var_columns = [col for col in df.columns if col not in id_vars]
   expression = ', '.join([', '.join(['\'' + x + '\'', '`' + x + '`']) for x in var_columns])
-  return df.selectExpr(id_vars, f"stack({len(var_columns)},{expression}) as ({var_name}, {value_name})")
+  return df.selectExpr(id_vars, f"stack({len(var_columns)},{expression}) as ({var_name}, {value_name})").orderBy(var_name, id_vars)
+
+# COMMAND ----------
+
+## Define a test function
+def are_dfs_equal(df1, df2):
+    if df1.schema != df2.schema:
+        return False
+    if df1.collect() != df2.collect():
+        return False
+    return True
 
 # COMMAND ----------
 
@@ -33,35 +43,44 @@ df_out = spark.createDataFrame(
 
 # COMMAND ----------
 
-## Test function
-
-melt(
-  df=df_in,
-  id_vars='A'
-).show()
+## Test results are as expected
+are_dfs_equal(df_out, melt(df=df_in, id_vars='A'))
 
 # COMMAND ----------
 
 ## Set some constaints
-container_name = 'data'
 storage_account_name = 'oifstorageaccount'
-input = '/mnt/input'
-output = '/mnt/output'
+path_input = '/mnt/input'
+path_output = '/mnt/output'
 scope_name = 'oif-scope'
 key_name = 'oif-secret-blob'
 
 # COMMAND ----------
 
 ## Mount the blob storage. Only needs to be run once!
+
+## Mount input
 # dbutils.fs.mount(
-#   source = f'wasbs://{container_name}@{storage_account_name}.blob.core.windows.net/',
-#   mount_point = mount_point,
+#   source = f'wasbs://input@{storage_account_name}.blob.core.windows.net/',
+#   mount_point = path_input,
 #   extra_configs = {f'fs.azure.account.key.{storage_account_name}.blob.core.windows.net':dbutils.secrets.get(scope = scope_name, key = key_name)})
+
+## Unmount input
+# dbutils.fs.unmount(path_input)
+
+## Mount output
+# dbutils.fs.mount(
+#   source = f'wasbs://output@{storage_account_name}.blob.core.windows.net/',
+#   mount_point = path_output,
+#   extra_configs = {f'fs.azure.account.key.{storage_account_name}.blob.core.windows.net':dbutils.secrets.get(scope = scope_name, key = key_name)})
+
+## Unmount output
+# dbutils.fs.unmount(path_output)
 
 # COMMAND ----------
 
 ## Read input from blob storage
-df = spark.read.parquet(f'{input}/a1')
+df = spark.read.parquet(f'{path_input}/a1')
 
 # COMMAND ----------
 
@@ -95,7 +114,13 @@ display(df_tidied)
 
 # COMMAND ----------
 
-df_tidied.write.parquet(f'{output}/a1')
+(
+df_tidied.write
+  .mode('overwrite')
+  .parquet(
+    f'{path_output}/a1'
+  )
+)
 
 # COMMAND ----------
 
