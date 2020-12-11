@@ -121,6 +121,3 @@ df_tidied.write
     f'{path_output}/a1'
   )
 )
-
-# COMMAND ----------
-
