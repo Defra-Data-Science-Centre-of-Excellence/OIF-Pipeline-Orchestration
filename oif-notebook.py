@@ -50,8 +50,8 @@ are_dfs_equal(df_out, melt(df=df_in, id_vars='A'))
 
 ## Set some constaints
 storage_account_name = 'oifstorageaccount'
-path_input = '/mnt/input'
-path_output = '/mnt/output'
+path_input = f'/mnt/{input}'
+path_output = f'/mnt/{output}'
 scope_name = 'oif-scope'
 key_name = 'oif-secret-blob'
 
@@ -80,7 +80,13 @@ key_name = 'oif-secret-blob'
 # COMMAND ----------
 
 ## Read input from blob storage
-df = spark.read.parquet(f'{path_input}/a1')
+df = spark.read.parquet(f'{path_input}/{filename}')
+
+# COMMAND ----------
+
+# def filter_rows(df):
+#   """"Given A1 input df, returns only the total rows for the pollutants we're interested in""""
+#   return df.filter(df.ShortPollName.isin('NH3 Total', 'NOx Total', 'SO2 Total', 'VOC Total', 'PM2.5 Total'))
 
 # COMMAND ----------
 
@@ -110,7 +116,7 @@ df_tidied = melt(
 
 # COMMAND ----------
 
-display(df_tidied)
+# display(df_tidied)
 
 # COMMAND ----------
 
@@ -118,6 +124,6 @@ display(df_tidied)
 df_tidied.write
   .mode('overwrite')
   .parquet(
-    f'{path_output}/a1'
+    f'{path_output}/{filename}'
   )
 )
