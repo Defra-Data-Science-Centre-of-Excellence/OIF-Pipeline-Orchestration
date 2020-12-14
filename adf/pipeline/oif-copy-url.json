@@ -1,0 +1,77 @@
+{
+	"name": "oif-copy-url",
+	"properties": {
+		"description": "Copy workbook from URL",
+		"activities": [
+			{
+				"name": "Copy_u0b",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "Source",
+						"value": "reports/cat09/2010220959_DA_API_1990-2018_V1.0.xlsx"
+					},
+					{
+						"name": "Destination",
+						"value": "oif-extracted//2010220959_DA_API_1990-2018_V1.0"
+					}
+				],
+				"typeProperties": {
+					"source": {
+						"type": "ExcelSource",
+						"storeSettings": {
+							"type": "HttpReadSettings",
+							"requestMethod": "GET"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings",
+							"maxConcurrentConnections": 0
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"logSettings": {
+						"enableCopyActivityLog": true,
+						"copyActivityLogSettings": {
+							"logLevel": "Warning",
+							"enableReliableLogging": false
+						},
+						"logLocationSettings": {
+							"linkedServiceName": {
+								"referenceName": "oif-synapse-analytics-WorkspaceDefaultStorage",
+								"type": "LinkedServiceReference"
+							},
+							"path": "oif-extracted"
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "Devolved_Administration_Air_Pollutants_Inventory_1990_2018",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "England_Air_Pollutant_Inventory_1990_2018",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": []
+	}
+}

@@ -1,0 +1,20 @@
+{
+	"name": "England_Air_Pollutant_Inventory_1990_2018",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "oif-synapse-analytics-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "2010220959_DA_API_1990-2018_V1.0",
+				"fileSystem": "oif-extracted"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
