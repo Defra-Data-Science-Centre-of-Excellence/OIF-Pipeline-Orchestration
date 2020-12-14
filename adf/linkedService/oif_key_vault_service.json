@@ -1,0 +1,10 @@
+{
+	"name": "oif_key_vault_service",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://oif-key-vault.vault.azure.net/"
+		}
+	}
+}
