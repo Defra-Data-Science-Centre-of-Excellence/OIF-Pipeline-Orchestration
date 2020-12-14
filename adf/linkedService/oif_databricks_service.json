@@ -1,0 +1,23 @@
+{
+	"name": "oif_databricks_service",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-2001556391242433.13.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "oif_key_vault_service",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "oif-adb-secret"
+			},
+			"existingClusterId": "1208-175154-slid248"
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
