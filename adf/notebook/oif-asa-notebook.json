@@ -1,6 +1,234 @@
 {
 	"name": "oif-asa-notebook",
 	"properties": {
-		"cells": []
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Import libraries"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql import functions as fn\n",
+					"import pandas as pd"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Define an unpivot function"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def melt(df, id_vars, var_name=\"variable\", value_name=\"value\"):\n",
+					"  \"\"\"\"Unpivot a DataFrame from wide to long format\"\"\"\n",
+					"  var_columns = [col for col in df.columns if col not in id_vars]\n",
+					"  expression = ', '.join([', '.join(['\\'' + x + '\\'', '`' + x + '`']) for x in var_columns])\n",
+					"  return df.selectExpr(id_vars, f\"stack({len(var_columns)},{expression}) as ({var_name}, {value_name})\").orderBy(var_name, id_vars)"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Define a test function"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def are_dfs_equal(df1, df2):\n",
+					"    if df1.schema != df2.schema:\n",
+					"        return False\n",
+					"    if df1.collect() != df2.collect():\n",
+					"        return False\n",
+					"    return True"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Create some test data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\n",
+					"df_in = spark.createDataFrame(\n",
+					"  pd.DataFrame({\n",
+					"    'A': {0: 'a', 1: 'b', 2: 'c'},\n",
+					"    'B': {0: 1, 1: 3, 2: 5},\n",
+					"    'C': {0: 2, 1: 4, 2: 6}\n",
+					"  })\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_out = spark.createDataFrame(\n",
+					"  pd.DataFrame({\n",
+					"    'A': {0: 'a', 1: 'b', 2: 'c', 3: 'a', 4: 'b', 5: 'c',},\n",
+					"    'variable': {0: 'B', 1: 'B', 2: 'B', 3: 'C', 4: 'C', 5: 'C',},\n",
+					"    'value': {0: 1, 1: 3, 2: 5, 3: 2, 4: 4, 5: 6}\n",
+					"    })\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Test results are as expected"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(df_out, melt(df=df_in, id_vars='A'))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Set some constaints"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"storage_account_name = 'oifstorageaccount2'\n",
+					"container_input = 'oif-extracted'\n",
+					"container_output = 'oif-transformed'\n",
+					"filename = '2010220959_DA_API_1990-2018_V1.0'"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Read input from blob storage"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df = spark.read.parquet(f'abfss://{container_input}@{storage_account_name}.dfs.core.windows.net/{filename}')"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Filter rows"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\n",
+					"df_filtered_rows = df.filter(df.ShortPollName.isin('NH3 Total', 'NOx Total', 'SO2 Total', 'VOC Total', 'PM2.5 Total'))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Drop columns"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_filtered_cols = df_filtered_rows.drop('NFRCode', 'SourceName')"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Clean pollutant names"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_cleaned_1 = df_filtered_cols.withColumn('ShortPollName', fn.regexp_replace(df_filtered_cols.ShortPollName,' Total', ''))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_cleaned_2 = df_cleaned_1.withColumn('ShortPollName', fn.regexp_replace(df_cleaned_1.ShortPollName,'VOC', 'NMVOC'))"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Unpivot into tidy structure"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"df_tidied = melt(\n",
+					"  df=df_cleaned_2,\n",
+					"  id_vars=\"ShortPollName\",\n",
+					"  var_name=\"Year\", \n",
+					"  value_name=\"Emissions\"\n",
+					")"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Write output"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"(\n",
+					"df_tidied.write\n",
+					"  .mode('overwrite')\n",
+					"  .parquet(\n",
+					"    f'abfss://{container_outputput}@{storage_account_name}.dfs.core.windows.net/{filename}'\n",
+					"  )\n",
+					")"
+				],
+				"execution_count": null
+			}
+		]
 	}
 }
