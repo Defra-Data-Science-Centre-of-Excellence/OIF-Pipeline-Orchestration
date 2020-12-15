@@ -468,7 +468,13 @@
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Set some constaints"
+					"## Use main function"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Set some constaints"
 				]
 			},
 			{
@@ -484,7 +490,7 @@
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Read input from blob storage"
+					"### Read input from blob storage"
 				]
 			},
 			{
@@ -497,7 +503,7 @@
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Transform input"
+					"### Transform input"
 				]
 			},
 			{
@@ -510,7 +516,7 @@
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Write output"
+					"### Write output"
 				]
 			},
 			{
