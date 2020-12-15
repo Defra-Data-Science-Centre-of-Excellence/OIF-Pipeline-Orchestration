@@ -1,0 +1,33 @@
+{
+	"name": "dataset_oif_transformed",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "oif-synapse-analytics-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "2010220959_DA_API_1990-2018_V1.0",
+				"fileSystem": "oif-transformed"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "ShortPollName",
+				"type": "UTF8"
+			},
+			{
+				"name": "Year",
+				"type": "UTF8"
+			},
+			{
+				"name": "Emissions",
+				"type": "UTF8"
+			}
+		]
+	}
+}
