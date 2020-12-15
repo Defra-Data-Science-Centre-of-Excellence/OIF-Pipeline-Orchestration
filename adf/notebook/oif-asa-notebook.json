@@ -50,31 +50,21 @@
 				"cell_type": "code",
 				"source": [
 					"from pyspark.sql import functions as fn\n",
+					"from pyspark.sql import Row\n",
 					"import pandas as pd"
-				],
-				"execution_count": 1
-			},
-			{
-				"cell_type": "markdown",
-				"source": [
-					"## Define an unpivot function"
-				]
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"def melt(df, id_vars, var_name=\"variable\", value_name=\"value\"):\n",
-					"  \"\"\"\"Unpivot a DataFrame from wide to long format\"\"\"\n",
-					"  var_columns = [col for col in df.columns if col not in id_vars]\n",
-					"  expression = ', '.join([', '.join(['\\'' + x + '\\'', '`' + x + '`']) for x in var_columns])\n",
-					"  return df.selectExpr(id_vars, f\"stack({len(var_columns)},{expression}) as ({var_name}, {value_name})\").orderBy(var_name, id_vars)"
 				],
 				"execution_count": 2
 			},
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Define a test function"
+					"## Define global functions"
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### DataFame test function"
 				]
 			},
 			{
@@ -87,12 +77,65 @@
 					"        return False\n",
 					"    return True"
 				],
-				"execution_count": null
+				"execution_count": 11
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_are_dfs_equal_true = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(Test='True')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 44
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_are_dfs_equal_false = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(Test='False')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 45
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(test_are_dfs_equal_true, test_are_dfs_equal_true) == True"
+				],
+				"execution_count": 46
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(test_are_dfs_equal_true, test_are_dfs_equal_false) == False"
+				],
+				"execution_count": 48
 			},
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Create some test data"
+					"### Unpivot function"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def melt(df, id_vars, var_name=\"variable\", value_name=\"value\"):\n",
+					"  \"\"\"\"Unpivot a DataFrame from wide to long format\"\"\"\n",
+					"  var_columns = [col for col in df.columns if col not in id_vars]\n",
+					"  expression = ', '.join([', '.join(['\\'' + x + '\\'', '`' + x + '`']) for x in var_columns])\n",
+					"  return df.selectExpr(id_vars, f\"stack({len(var_columns)},{expression}) as ({var_name}, {value_name})\").orderBy(var_name, id_vars)"
+				],
+				"execution_count": 63
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Create some test data"
 				]
 			},
 			{
@@ -125,7 +168,7 @@
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Test results are as expected"
+					"Test results are as expected"
 				]
 			},
 			{
@@ -134,6 +177,293 @@
 					"are_dfs_equal(df_out, melt(df=df_in, id_vars='A'))"
 				],
 				"execution_count": 6
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Define local functions\n",
+					""
+				]
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Filter function"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def filter_rows(df):\n",
+					"     return df.filter(df.ShortPollName.isin('NH3 Total', 'NOx Total', 'SO2 Total', 'VOC Total', 'PM2.5 Total'))"
+				],
+				"execution_count": 19
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Create test input data\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_filter_rows_input = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(ShortPollName='NH3 Total'),\n",
+					"        Row(ShortPollName='NOx Total'),\n",
+					"        Row(ShortPollName='SO2 Total'),\n",
+					"        Row(ShortPollName='VOC Total'),\n",
+					"        Row(ShortPollName='PM2.5 Total'),\n",
+					"        Row(ShortPollName='Test')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 21
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Create test expected output data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_filter_rows_expected = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(ShortPollName='NH3 Total'),\n",
+					"        Row(ShortPollName='NOx Total'),\n",
+					"        Row(ShortPollName='SO2 Total'),\n",
+					"        Row(ShortPollName='VOC Total'),\n",
+					"        Row(ShortPollName='PM2.5 Total')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 23
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Use function on test input data"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_filter_rows_results = filter_rows(test_filter_rows_input)"
+				],
+				"execution_count": 25
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"Compare results against expected"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(\n",
+					"    test_filter_rows_results.orderBy('ShortPollName'),\n",
+					"    test_filter_rows_expected.orderBy('ShortPollName')\n",
+					")"
+				],
+				"execution_count": 27
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Filter columns function\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def filter_columns(df):\n",
+					"    return df.drop('NFRCode', 'SourceName')"
+				],
+				"execution_count": 13
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_filter_columns_input = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(Test='Test', NFRCode='NFRCode', SourceName='SourceName')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 14
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_filter_columns_expected = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(Test='Test')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_filter_columns_results = filter_columns(test_filter_columns_input)"
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(\n",
+					"    test_filter_columns_results,\n",
+					"    test_filter_columns_expected\n",
+					")"
+				],
+				"execution_count": 17
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Clean pollutant names function\n",
+					""
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def clean_pollutant_names(df):\n",
+					"    df2 = df.withColumn('ShortPollName', fn.regexp_replace(df.ShortPollName,' Total', ''))\n",
+					"    return df2.withColumn('ShortPollName', fn.regexp_replace(df2.ShortPollName,'VOC', 'NMVOC'))"
+				],
+				"execution_count": 38
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_clean_pollutant_names_input = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(ShortPollName='VOC Total'),\n",
+					"        Row(ShortPollName='PM2.5 Total'),\n",
+					"        Row(ShortPollName='Test')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 39
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_clean_pollutant_names_expected = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row(ShortPollName='NMVOC'),\n",
+					"        Row(ShortPollName='PM2.5'),\n",
+					"        Row(ShortPollName='Test')\n",
+					"    ]\n",
+					")"
+				],
+				"execution_count": 40
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_clean_pollutant_names_results = clean_pollutant_names(test_clean_pollutant_names_input)"
+				],
+				"execution_count": 41
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(\n",
+					"    test_clean_pollutant_names_results.orderBy('ShortPollName'),\n",
+					"    test_clean_pollutant_names_expected.orderBy('ShortPollName')\n",
+					")"
+				],
+				"execution_count": 42
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"### Unpivot function"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def tidy(df):\n",
+					"    return melt(\n",
+					"        df=df,\n",
+					"        id_vars=\"ShortPollName\",\n",
+					"        var_name=\"Year\", \n",
+					"        value_name=\"Emissions\"\n",
+					"        )"
+				],
+				"execution_count": 61
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_tidy_input = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row('NH3 Total', 1, 2, 3)\n",
+					"    ],\n",
+					"    schema=['ShortPollName', '1990', '1991', '1992']\n",
+					")"
+				],
+				"execution_count": 57
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_tidy_expected = spark.createDataFrame(\n",
+					"    [\n",
+					"        Row('NH3 Total', '1990', 1),\n",
+					"        Row('NH3 Total', '1991', 2),\n",
+					"        Row('NH3 Total', '1992', 3)\n",
+					"    ],\n",
+					"    schema=['ShortPollName','Year', 'Emissions']\n",
+					")"
+				],
+				"execution_count": 74
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"test_tidy_results = tidy(test_tidy_input)"
+				],
+				"execution_count": 64
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"are_dfs_equal(\n",
+					"    test_tidy_expected,\n",
+					"    test_tidy_results\n",
+					")"
+				],
+				"execution_count": 76
+			},
+			{
+				"cell_type": "markdown",
+				"source": [
+					"## Define main function"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"def transform(df):\n",
+					"    df_filtered_rows = filter_rows(df)\n",
+					"    df_filtered_cols = filter_columns(df_filtered_rows)\n",
+					"    df_cleaned = clean_pollutant_names(df_filtered_cols)\n",
+					"    df_tidied = tidy(df_cleaned)\n",
+					"    return df_tidied"
+				],
+				"execution_count": 85
 			},
 			{
 				"cell_type": "markdown",
@@ -149,7 +479,7 @@
 					"container_output = 'oif-transformed'\n",
 					"filename = '2010220959_DA_API_1990-2018_V1.0'"
 				],
-				"execution_count": 7
+				"execution_count": 30
 			},
 			{
 				"cell_type": "markdown",
@@ -162,72 +492,20 @@
 				"source": [
 					"df = spark.read.parquet(f'abfss://{container_input}@{storage_account_name}.dfs.core.windows.net/{filename}')"
 				],
-				"execution_count": 8
+				"execution_count": 86
 			},
 			{
 				"cell_type": "markdown",
 				"source": [
-					"## Filter rows"
+					"## Transform input"
 				]
 			},
 			{
 				"cell_type": "code",
 				"source": [
-					"\n",
-					"df_filtered_rows = df.filter(df.ShortPollName.isin('NH3 Total', 'NOx Total', 'SO2 Total', 'VOC Total', 'PM2.5 Total'))"
+					"df_transformed = transform(df)"
 				],
-				"execution_count": 9
-			},
-			{
-				"cell_type": "markdown",
-				"source": [
-					"## Drop columns"
-				]
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"df_filtered_cols = df_filtered_rows.drop('NFRCode', 'SourceName')"
-				],
-				"execution_count": 10
-			},
-			{
-				"cell_type": "markdown",
-				"source": [
-					"## Clean pollutant names"
-				]
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"df_cleaned_1 = df_filtered_cols.withColumn('ShortPollName', fn.regexp_replace(df_filtered_cols.ShortPollName,' Total', ''))"
-				],
-				"execution_count": 11
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"df_cleaned_2 = df_cleaned_1.withColumn('ShortPollName', fn.regexp_replace(df_cleaned_1.ShortPollName,'VOC', 'NMVOC'))"
-				],
-				"execution_count": 12
-			},
-			{
-				"cell_type": "markdown",
-				"source": [
-					"## Unpivot into tidy structure"
-				]
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"df_tidied = melt(\n",
-					"  df=df_cleaned_2,\n",
-					"  id_vars=\"ShortPollName\",\n",
-					"  var_name=\"Year\", \n",
-					"  value_name=\"Emissions\"\n",
-					")"
-				],
-				"execution_count": 13
+				"execution_count": 88
 			},
 			{
 				"cell_type": "markdown",
@@ -239,11 +517,12 @@
 				"cell_type": "code",
 				"source": [
 					"(\n",
-					"df_tidied.write\n",
-					"  .mode('overwrite')\n",
-					"  .parquet(\n",
+					"df_transformed\n",
+					"    .write\n",
+					"    .mode('overwrite')\n",
+					"    .parquet(\n",
 					"    f'abfss://{container_output}@{storage_account_name}.dfs.core.windows.net/{filename}'\n",
-					"  )\n",
+					"    )\n",
 					")"
 				],
 				"execution_count": 15
